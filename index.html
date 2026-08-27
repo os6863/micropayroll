@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MicroPayroll — On-Chain Payroll on Stellar</title>
+  <meta name="description" content="Distribute salaries to your entire team in seconds, with full on-chain transparency on Stellar." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+  <!-- Stellar SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@stellar/stellar-sdk@12.1.0/dist/stellar-sdk.js"></script>
+  <!-- Freighter API v1 (self-hosted) -->
+  <script src="js/freighter-api.js"></script>
+  <!-- ALBEDO — web-based wallet (Yellow Belt) -->
+  <script src="https://albedo.link/albedo.js"></script>
+</head>
+<body>
+
+  <canvas id="confetti-canvas"></canvas>
+
+  <div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- ═══ MODAL: Wallet Selector (Yellow Belt) ═══ -->
+  <div class="modal-overlay" id="modal-wallet-select">
+    <div class="modal modal-wallet-select">
+      <div class="modal-header">
+        <h3 class="modal-title">Connect Wallet</h3>
+        <button class="modal-close" onclick="UI.closeModal('modal-wallet-select')">✕</button>
+      </div>
+      <p class="wallet-select-sub">Choose your Stellar wallet to get started.</p>
+
+      <div class="wallet-options">
+        <!-- Freighter -->
+        <button class="wallet-option-card" onclick="Wallet.connectWith('freighter')">
+          <div class="wallet-option-icon">🦊</div>
+          <div class="wallet-option-body">
+            <div class="wallet-option-name">Freighter</div>
+            <div class="wallet-option-desc">Browser extension · <a href="https://www.freighter.app/" target="_blank" rel="noopener" onclick="event.stopPropagation()">freighter.app ↗</a></div>
+          </div>
+          <div class="wallet-option-arrow">→</div>
+        </button>
+
+        <!-- ALBEDO -->
+        <button class="wallet-option-card" onclick="Wallet.connectWith('albedo')">
+          <div class="wallet-option-icon">🔷</div>
+          <div class="wallet-option-body">
+            <div class="wallet-option-name">ALBEDO</div>
+            <div class="wallet-option-desc">Web-based · No extension needed</div>
+          </div>
+          <div class="wallet-option-arrow">→</div>
+        </button>
+      </div>
+
+      <p class="wallet-select-hint">Both wallets connect to <strong>Stellar Testnet</strong>.</p>
+    </div>
+  </div>
+
+  <!-- ═══ MODAL: Add Member ═══ -->
+  <div class="modal-overlay" id="modal-add-member">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Add Team Member</h3>
+        <button class="modal-close" onclick="UI.closeModal('modal-add-member')">✕</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input class="form-input" id="inp-name" placeholder="e.g. Sara Rezaei" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Role / Position</label>
+        <input class="form-input" id="inp-role" placeholder="e.g. Frontend Developer" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Stellar Wallet Address (G…)</label>
+        <input class="form-input mono" id="inp-wallet" placeholder="GABC…XYZ" autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Salary Amount (XLM)</label>
+        <div class="input-with-unit">
+          <input class="form-input" id="inp-amount" type="number" min="0.0000001" step="any" placeholder="100" />
+          <span class="input-unit">XLM</span>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="UI.closeModal('modal-add-member')">Cancel</button>
+        <button class="btn btn-primary" onclick="App.addMember()">Add Member</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MODAL: Receipt ═══ -->
+  <div class="modal-overlay" id="modal-receipt">
+    <div class="modal modal-receipt">
+      <div class="receipt-check">✅</div>
+      <h2 class="receipt-title">Payroll Distributed!</h2>
+      <p class="receipt-subtitle" id="receipt-subtitle"></p>
+      <div class="receipt-table" id="receipt-rows"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="UI.closeModal('modal-receipt')">Close</button>
+        <a class="btn btn-primary" id="receipt-explorer-link" href="#" target="_blank" rel="noopener">
+          View on Explorer ↗
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast">
+    <span id="toast-icon"></span>
+    <span id="toast-msg"></span>
+  </div>
+
+  <!-- ═══ APP SHELL ═══ -->
+  <div class="app-shell">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-mark">⚡</div>
+        <div class="logo-text">Micro<span>Payroll</span></div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a class="nav-item active" href="javascript:void(0)" onclick="UI.setPage('dashboard', this)">
+          <span class="nav-icon">🏠</span> Dashboard
+        </a>
+        <a class="nav-item" href="javascript:void(0)" onclick="UI.setPage('team', this)">
+          <span class="nav-icon">👥</span> Team Roster
+        </a>
+        <a class="nav-item" href="javascript:void(0)" onclick="UI.setPage('history', this)">
+          <span class="nav-icon">📜</span> History
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="network-badge">
+          <span class="dot-green"></span> Stellar Testnet
+        </div>
+        <div class="sidebar-version">v2.0.0 — Yellow Belt 🟡</div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main-content">
+
+      <!-- Top bar -->
+      <header class="topbar">
+        <h1 class="page-title" id="page-title">Dashboard</h1>
+        <div class="topbar-actions">
+          <!-- Wallet type badge (shown when connected) -->
+          <span class="wallet-type-badge" id="wallet-type-badge" style="display:none;"></span>
+
+          <button class="btn btn-ghost btn-sm" id="friendbot-btn"
+                  onclick="App.fundWithFriendbot()" style="display:none;">
+            🚰 Friendbot
+          </button>
+          <button class="btn btn-primary btn-sm" id="wallet-connect-btn"
+                  onclick="Wallet.promptConnect()">
+            <span id="wallet-btn-icon">🔗</span>
+            <span id="wallet-btn-label">Connect Wallet</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- ── PAGE: DASHBOARD ── -->
+      <section class="page active" id="page-dashboard">
+
+        <!-- Connect Banner -->
+        <div class="connect-banner" id="connect-banner">
+          <div class="connect-banner-inner">
+            <div class="connect-banner-icon">⚡</div>
+            <h2>Welcome to MicroPayroll</h2>
+            <p>Connect your Stellar wallet to start distributing payroll on Testnet.</p>
+            <div class="connect-wallet-options">
+              <button class="btn btn-primary btn-lg" onclick="Wallet.connectWith('freighter')">
+                🦊 Connect Freighter
+              </button>
+              <button class="btn btn-secondary btn-lg" onclick="Wallet.connectWith('albedo')">
+                🔷 Connect ALBEDO
+              </button>
+            </div>
+            <p class="connect-hint">
+              Freighter: <a href="https://www.freighter.app/" target="_blank" rel="noopener">freighter.app ↗</a>
+              &nbsp;·&nbsp;
+              ALBEDO: web-based, no extension needed
+            </p>
+          </div>
+        </div>
+
+        <!-- Dashboard Content (shown when connected) -->
+        <div class="dashboard-content" id="dashboard-content" style="display:none;">
+
+          <!-- Stats Row -->
+          <div class="stats-row">
+            <div class="stat-card">
+              <div class="stat-label">Treasury Balance</div>
+              <div class="stat-value" id="stat-balance">—</div>
+              <div class="stat-sub" id="stat-balance-usd">≈ $—</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Team Size</div>
+              <div class="stat-value" id="stat-team">0</div>
+              <div class="stat-sub">recipients</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Next Payroll</div>
+              <div class="stat-value" id="stat-payroll-total">0 XLM</div>
+              <div class="stat-sub" id="stat-payroll-usd">≈ $0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Total Paid (Session)</div>
+              <div class="stat-value" id="stat-total-paid">0 XLM</div>
+              <div class="stat-sub" id="stat-runs">0 payroll runs</div>
+            </div>
+          </div>
+
+          <!-- Payroll Panel -->
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <h2 class="panel-title">Run Payroll</h2>
+                <p class="panel-sub">Sends XLM to all team members · logs run on PayrollRegistry contract</p>
+              </div>
+            </div>
+
+            <div id="payroll-team-preview"></div>
+
+            <!-- Progress -->
+            <div id="payroll-progress" style="display:none;">
+              <div class="progress-header">
+                <span id="progress-label">Preparing...</span>
+                <span id="progress-pct">0%</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+              </div>
+            </div>
+
+            <button class="payroll-btn" id="payroll-btn" onclick="Payroll.run()" disabled>
+              🚀 Run Payroll
+            </button>
+
+            <!-- Contract Status (Yellow Belt) -->
+            <div id="contract-status" class="contract-status-wrap"></div>
+          </div>
+
+          <!-- TX Log -->
+          <div class="panel">
+            <div class="panel-header">
+              <h2 class="panel-title">Live Transactions</h2>
+              <button class="btn btn-ghost btn-sm" onclick="UI.clearLog()">Clear</button>
+            </div>
+            <div class="tx-log" id="tx-log">
+              <div class="tx-empty">
+                <div class="tx-empty-icon">📭</div>
+                <div>Run payroll to see live transactions</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ── PAGE: TEAM ── -->
+      <section class="page" id="page-team">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Team Roster</h2>
+              <p class="panel-sub">Add team members and their Stellar wallet addresses</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="UI.openModal('modal-add-member')">+ Add Member</button>
+          </div>
+
+          <div id="team-table-wrap">
+            <div class="team-empty" id="team-empty">
+              <div class="team-empty-icon">👥</div>
+              <p>No team members yet.</p>
+              <button class="btn btn-primary btn-sm" onclick="UI.openModal('modal-add-member')">Add First Member</button>
+            </div>
+            <table class="data-table" id="team-table" style="display:none;">
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th>Wallet Address</th>
+                  <th>Amount</th>
+                  <th>Last Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="team-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── PAGE: HISTORY ── -->
+      <section class="page" id="page-history">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Payroll History</h2>
+              <p class="panel-sub">Session runs and on-chain contract events</p>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="UI.clearHistory()">Clear Session</button>
+          </div>
+
+          <!-- History Tabs (Yellow Belt) -->
+          <div class="history-tabs">
+            <button class="history-tab active" data-tab="session"
+                    onclick="UI.setHistoryTab('session')">
+              📋 Session History
+            </button>
+            <button class="history-tab" data-tab="events"
+                    onclick="UI.setHistoryTab('events')">
+              📡 On-Chain Events
+            </button>
+          </div>
+
+          <div id="history-list">
+            <div class="tx-empty">
+              <div class="tx-empty-icon">📋</div>
+              <div>No payroll history yet</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Scripts (order matters — no bundler) -->
+  <script src="js/config.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/wallet-provider.js"></script>
+  <script src="js/wallet.js"></script>
+  <script src="js/stellar.js"></script>
+  <script src="js/contract.js"></script>
+  <script src="js/payroll.js"></script>
+  <script src="js/main.js"></script>
+
+</body>
+</html>
