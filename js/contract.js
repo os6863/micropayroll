@@ -118,21 +118,35 @@ const Contract = (() => {
     if (!_isConfigured()) return [];
 
     try {
-      const server       = _getServer();
-      const latestLedger = await server.getLatestLedger();
-      // look back ~1 week worth of ledgers (5s avg) = 7*24*3600/5 ≈ 120 960
-      const startLedger  = Math.max(0, latestLedger.sequence - 120000);
-
-      const response = await server.getEvents({
-        startLedger,
-        filters: [{
-          type:        'contract',
-          contractIds: [CONFIG.CONTRACT_ID],
-        }],
-        limit: 50,
+      // Use raw JSON-RPC to avoid SDK XDR parsing issues
+      const rpcResp = await fetch(CONFIG.SOROBAN_RPC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0', id: 1, method: 'getLatestLedger', params: {},
+        }),
       });
+      const rpcData = await rpcResp.json();
+      const latestSeq = rpcData.result && rpcData.result.sequence
+        ? rpcData.result.sequence : 0;
+      const startLedger = Math.max(1, latestSeq - 120000);
 
-      return (response.events || []).reverse(); // newest first
+      const evResp = await fetch(CONFIG.SOROBAN_RPC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0', id: 2,
+          method: 'getEvents',
+          params: {
+            startLedger: String(startLedger),
+            filters: [{ type: 'contract', contractIds: [CONFIG.CONTRACT_ID] }],
+            pagination: { limit: 50 },
+          },
+        }),
+      });
+      const evData = await evResp.json();
+      const events = (evData.result && evData.result.events) ? evData.result.events : [];
+      return events.reverse(); // newest first
     } catch (err) {
       console.warn('[Contract.fetchEvents]', err);
       return [];
