@@ -78,6 +78,9 @@ const Wallet = (() => {
    * Only works for Freighter (extension stays unlocked between refreshes).
    */
   async function autoConnect() {
+    // ALBEDO is popup-based and can't auto-reconnect — skip if user was using it
+    const savedType = State.get().wallet.walletType;
+    if (savedType === 'albedo') return;
     const pk = await WalletProvider.tryAutoConnect();
     if (!pk) return;
     State.setWallet(pk, null, 'freighter');

@@ -65,12 +65,22 @@ const Contract = (() => {
       throw new Error('Contract submission failed: ' + JSON.stringify(sendResult.errorResult));
     }
 
-    // Poll until confirmed (up to ~20 seconds)
-    for (let i = 0; i < 10; i++) {
+    // Poll via Horizon (avoids Soroban RPC XDR parsing issues)
+    for (let i = 0; i < 20; i++) {
       await new Promise(r => setTimeout(r, 2000));
-      const status = await server.getTransaction(sendResult.hash);
-      if (status.status === 'SUCCESS') return sendResult.hash;
-      if (status.status === 'FAILED')  throw new Error('Contract transaction failed on-chain.');
+      try {
+        const resp = await fetch(
+          `https://horizon-testnet.stellar.org/transactions/${sendResult.hash}`
+        );
+        if (resp.status === 200) {
+          const txData = await resp.json();
+          if (txData.successful === true)  return sendResult.hash;
+          if (txData.successful === false) throw new Error('Contract transaction failed on-chain.');
+        }
+        // 404 = not yet ingested, keep polling
+      } catch (err) {
+        if (err.message && err.message.includes('failed on-chain')) throw err;
+      }
     }
     throw new Error('Contract transaction confirmation timed out.');
   }
