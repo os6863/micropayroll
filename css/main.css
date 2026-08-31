@@ -934,7 +934,7 @@ body.sidebar-open .page-title {
     transition: left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 4px 0 32px rgba(0,0,0,0.5);
   }
-  .sidebar.open { left: 0; }
+  .sidebar.open { left: 0; display: flex; }
 
   .hamburger { display: flex; }
 
