@@ -61,7 +61,7 @@ a:hover { text-decoration: underline; }
    LAYOUT
    ═══════════════════════════════════════════ */
 .app-shell {
-  position: relative; z-index: 1;
+  position: relative;
   display: flex; min-height: 100vh;
 }
 
