@@ -58,5 +58,7 @@ All pipeline steps completed successfully:
 ---
 
 ## Demo Video
-`micropayroll.mp4` — 1-2 min walkthrough of the live dApp.
+**Google Drive:** https://drive.google.com/file/d/11KNZhLzDMBhc2SFlfU8kqseadYXRJ1zI/view?usp=sharing
+
+1-2 min walkthrough of the live dApp on mobile and desktop (multi-wallet, payroll run, on-chain tx).
 
