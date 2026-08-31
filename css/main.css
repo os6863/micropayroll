@@ -969,9 +969,6 @@ body.sidebar-open .page-title {
   .topbar-actions { gap: 4px; }
   .topbar-actions .btn-sm { font-size: 0.72rem; padding: 5px 8px; }
 
-  /* Hide Friendbot on mobile — not needed for demo */
-  #friendbot-btn { display: none !important; }
-
   .wallet-type-badge { display: none !important; }
 
   .data-table { font-size: 0.82rem; }
