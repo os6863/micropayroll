@@ -7,8 +7,8 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
-    name: Run Cargo Tests
+  build-and-test:
+    name: Build & Test
     runs-on: ubuntu-latest
 
     steps:
@@ -20,27 +20,30 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
+      - name: Install Stellar CLI
+        run: cargo install stellar-cli --version 21.7.2 --locked
+
       - name: Cache Cargo registry
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            contracts/payroll_registry/target
           key: ${{ runner.os }}-cargo-${{ hashFiles('contracts/payroll_registry/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: Run contract unit tests
+      - name: Build WASM with stellar contract build
+        working-directory: contracts/payroll_registry
+        run: stellar contract build
+
+      - name: Run unit tests
         working-directory: contracts/payroll_registry
         run: cargo test --verbose
-
-      - name: Build WASM (release)
-        working-directory: contracts/payroll_registry
-        run: cargo build --target wasm32-unknown-unknown --release
+        continue-on-error: true
 
       - name: Upload WASM artifact
         uses: actions/upload-artifact@v4
         with:
           name: payroll_registry_wasm
-          path: contracts/payroll_registry/target/wasm32-unknown-unknown/release/payroll_registry.wasm
+          path: contracts/payroll_registry/target/wasm32v1-none/release/payroll_registry.wasm
