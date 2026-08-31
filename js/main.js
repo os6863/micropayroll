@@ -65,6 +65,7 @@ const App = (() => {
     sidebar.classList.toggle('open');
     overlay.classList.toggle('open');
     btn.classList.toggle('open');
+    document.body.classList.toggle('sidebar-open');
   }
 
   function closeSidebar() {
@@ -74,6 +75,7 @@ const App = (() => {
     sidebar.classList.remove('open');
     overlay.classList.remove('open');
     btn.classList.remove('open');
+    document.body.classList.remove('sidebar-open');
   }
 
   /* ── On-chain stats refresh (Orange Belt) ─ */

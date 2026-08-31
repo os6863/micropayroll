@@ -850,9 +850,18 @@ a:hover { text-decoration: underline; }
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.55);
-  z-index: 900;
+  z-index: 990;
 }
 .sidebar-overlay.open { display: block; }
+
+/* Hide topbar actions when sidebar is open on mobile */
+body.sidebar-open .topbar-actions {
+  visibility: hidden;
+  pointer-events: none;
+}
+body.sidebar-open .page-title {
+  visibility: hidden;
+}
 
 /* ── On-chain stat card (Orange Belt) ────────────────── */
 .stat-card.stat-onchain {
