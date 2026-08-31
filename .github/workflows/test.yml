@@ -20,8 +20,8 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
-      - name: Install Stellar CLI
-        run: cargo install stellar-cli --version 21.7.2 --locked
+      - name: Add wasm32v1-none target
+        run: rustup target add wasm32v1-none
 
       - name: Cache Cargo registry
         uses: actions/cache@v4
@@ -33,9 +33,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: Build WASM with stellar contract build
+      - name: Build WASM (wasm32v1-none)
         working-directory: contracts/payroll_registry
-        run: stellar contract build
+        run: cargo rustc --crate-type=cdylib --target=wasm32v1-none --release
 
       - name: Run unit tests
         working-directory: contracts/payroll_registry
