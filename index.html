@@ -19,6 +19,9 @@
 
   <canvas id="confetti-canvas"></canvas>
 
+  <!-- Mobile sidebar overlay -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="App.closeSidebar()"></div>
+
   <div class="bg-orbs">
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
@@ -141,7 +144,7 @@
         <div class="network-badge">
           <span class="dot-green"></span> Stellar Testnet
         </div>
-        <div class="sidebar-version">v2.0.0 — Yellow Belt 🟡</div>
+        <div class="sidebar-version">v3.0.0 — Orange Belt 🟠</div>
       </div>
     </aside>
 
@@ -150,6 +153,9 @@
 
       <!-- Top bar -->
       <header class="topbar">
+        <button class="hamburger" id="hamburger-btn" onclick="App.toggleSidebar()" aria-label="Toggle menu">
+          <span></span><span></span><span></span>
+        </button>
         <h1 class="page-title" id="page-title">Dashboard</h1>
         <div class="topbar-actions">
           <!-- Wallet type badge (shown when connected) -->
@@ -216,6 +222,11 @@
               <div class="stat-label">Total Paid (Session)</div>
               <div class="stat-value" id="stat-total-paid">0 XLM</div>
               <div class="stat-sub" id="stat-runs">0 payroll runs</div>
+            </div>
+            <div class="stat-card stat-onchain">
+              <div class="stat-label">On-Chain Total Distributed</div>
+              <div class="stat-value" id="stat-onchain-total">—</div>
+              <div class="stat-sub" id="stat-onchain-sub">PayrollRegistry contract</div>
             </div>
           </div>
 

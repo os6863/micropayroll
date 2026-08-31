@@ -1,7 +1,8 @@
 //! payroll_registry — Stellar Soroban Smart Contract
 //!
-//! Stores payroll run metadata on-chain and emits an event for each run.
-//! Part of MicroPayroll — Yellow Belt (Stellar Journey to Mastery)
+//! Stores payroll run metadata on-chain, emits an event for each run,
+//! and exposes read helpers for cumulative stats and latest run.
+//! Part of MicroPayroll — Orange Belt (Stellar Journey to Mastery)
 
 #![no_std]
 
@@ -31,8 +32,10 @@ pub struct RunRecord {
 pub enum DataKey {
     /// u64 — total number of runs logged
     RunCount,
-    /// RunRecord — keyed by run ID
+    /// RunRecord — keyed by run ID (1-based)
     Run(u64),
+    /// i128 — cumulative stroops distributed across all runs
+    TotalDistributed,
 }
 
 // ── Contract ─────────────────────────────────────────────────────────────────
@@ -45,9 +48,9 @@ impl PayrollRegistry {
     /// Log a completed payroll run on-chain.
     ///
     /// Requires authorization from `sender`.
-    /// Stores the run record, increments the run counter, and emits a
-    /// `("payroll", "logged")` event so off-chain listeners (the dApp)
-    /// can pick it up via Soroban RPC `getEvents`.
+    /// Stores the run record, increments the run counter, accumulates the
+    /// total distributed, and emits a `("payroll", "logged")` event so
+    /// off-chain listeners (the dApp) can pick it up via Soroban RPC `getEvents`.
     ///
     /// Returns the new run ID (1-based, monotonically increasing).
     pub fn log_run(
@@ -68,16 +71,25 @@ impl PayrollRegistry {
 
         let new_id = run_count + 1u64;
 
-        // Build and persist the record
+        // Build and persist the run record
         let record = RunRecord {
             sender: sender.clone(),
             recipient_count,
             total_stroops,
             timestamp: env.ledger().timestamp(),
         };
-
         env.storage().instance().set(&DataKey::Run(new_id), &record);
         env.storage().instance().set(&DataKey::RunCount, &new_id);
+
+        // Accumulate total distributed stroops
+        let prev_total: i128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::TotalDistributed)
+            .unwrap_or(0i128);
+        env.storage()
+            .instance()
+            .set(&DataKey::TotalDistributed, &(prev_total + total_stroops));
 
         // Extend instance TTL so the data stays accessible (~100 days on testnet)
         env.storage()
@@ -85,7 +97,7 @@ impl PayrollRegistry {
             .extend_ttl(518400, 518400);
 
         // Emit event — topic: (Symbol"payroll", Symbol"logged")
-        // Data: (run_id, sender, recipient_count, total_stroops)
+        // Data payload: (run_id, sender, recipient_count, total_stroops)
         env.events().publish(
             (symbol_short!("payroll"), symbol_short!("logged")),
             (new_id, sender, recipient_count, total_stroops),
@@ -106,5 +118,27 @@ impl PayrollRegistry {
     /// Returns None if the ID does not exist.
     pub fn get_run(env: Env, run_id: u64) -> Option<RunRecord> {
         env.storage().instance().get(&DataKey::Run(run_id))
+    }
+
+    /// Return the cumulative total XLM distributed across all runs (in stroops).
+    /// 1 XLM = 10_000_000 stroops.
+    pub fn get_total_distributed(env: Env) -> i128 {
+        env.storage()
+            .instance()
+            .get(&DataKey::TotalDistributed)
+            .unwrap_or(0i128)
+    }
+
+    /// Return the most recent payroll run record, or None if no runs have been logged.
+    pub fn get_latest_run(env: Env) -> Option<RunRecord> {
+        let count: u64 = env
+            .storage()
+            .instance()
+            .get(&DataKey::RunCount)
+            .unwrap_or(0u64);
+        if count == 0 {
+            return None;
+        }
+        env.storage().instance().get(&DataKey::Run(count))
     }
 }

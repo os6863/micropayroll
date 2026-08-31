@@ -25,7 +25,7 @@ const CONFIG = {
    * Leave as 'PLACEHOLDER' to run the dApp without on-chain event logging
    * (all wallet and payroll features still work; only the contract tab is disabled).
    */
-  CONTRACT_ID: 'CA7NSKWWMO7QBXPYEIP34HEFPJ46SNJJMPHJZ4NJJ6PQHULMCYBHVLRJ',   // ← paste deployed contract ID here
+  CONTRACT_ID: 'CBYELVJVGXMRHMHX4WSUVI2IDP4FAD4ZR2VQFG5A25FZCNDHYTHFXAUT',   // ← paste deployed contract ID here
 
   // ── Display ──────────────────────────────────────────────────────────────
   XLM_USD_RATE: 0.11, // mock display rate

@@ -1,0 +1,46 @@
+name: Soroban Contract Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Run Cargo Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            contracts/payroll_registry/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('contracts/payroll_registry/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Run contract unit tests
+        working-directory: contracts/payroll_registry
+        run: cargo test --verbose
+
+      - name: Build WASM (release)
+        working-directory: contracts/payroll_registry
+        run: cargo build --target wasm32-unknown-unknown --release
+
+      - name: Upload WASM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: payroll_registry_wasm
+          path: contracts/payroll_registry/target/wasm32-unknown-unknown/release/payroll_registry.wasm

@@ -1,84 +1,132 @@
 # ⚡ MicroPayroll — On-Chain Payroll on Stellar
 
-> Distribute team salaries in seconds with full on-chain transparency, powered by Stellar Testnet.
+[![Stellar Testnet](https://img.shields.io/badge/Stellar-Testnet-00d4ff?logo=stellar)](https://stellar.org)
+[![Orange Belt 🟠](https://img.shields.io/badge/Stellar%20Journey-Orange%20Belt%20%F0%9F%9F%A0-orange)](https://risein.com)
+[![CI Tests](https://github.com/os6863/micropayroll/actions/workflows/test.yml/badge.svg)](https://github.com/os6863/micropayroll/actions/workflows/test.yml)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?logo=vercel)](https://micropayroll-git-main-jakub-0bc9.vercel.app)
 
-![Stellar](https://img.shields.io/badge/Stellar-Testnet-00d4ff?style=flat-square&logo=stellar)
-![Belt](https://img.shields.io/badge/Belt-Yellow%20🟡-f5c518?style=flat-square)
-![Contract](https://img.shields.io/badge/Contract-Soroban-7b61ff?style=flat-square)
-![License](https://img.shields.io/badge/License-MIT-7b61ff?style=flat-square)
-
----
-
-## 🧠 The Problem
-
-Every month, founders manually send individual payments to each team member — tedious,
-error-prone, and leaves zero on-chain proof. Traditional payroll is slow, expensive, and opaque.
-
-## 💡 The Solution
-
-MicroPayroll is a **one-click payroll dashboard** on Stellar. Add your team, set amounts,
-hit **Run Payroll** — every payment goes out as a verifiable on-chain transaction,
-and the run is permanently logged in a Soroban smart contract.
-
-No bank. No middleman. Full transparency — on every layer.
+> Distribute salaries to your entire team in seconds — fully on-chain on **Stellar Testnet**, powered by a Soroban smart contract.
 
 ---
 
-## ✅ Yellow Belt Requirements
+## 🟠 Orange Belt — Level 3
 
 | Requirement | Status |
 |---|---|
-| Multi-wallet: Freighter (extension) | ✅ |
-| Multi-wallet: ALBEDO (web-based) | ✅ |
-| Wallet selector UI | ✅ |
-| Write Soroban smart contract (`payroll_registry`) | ✅ |
-| Contract: `log_run` function with authorization | ✅ |
-| Contract: emits `payroll/logged` event | ✅ |
-| Contract: `get_run_count` & `get_run` read functions | ✅ |
-| Contract tests (`src/test.rs`) | ✅ |
-| Frontend calls `log_run` after each payroll | ✅ |
-| On-Chain Events tab (fetches events via Soroban RPC) | ✅ |
-| Contract status panel in Dashboard | ✅ |
-| Deployed public dApp | ✅ |
-
-### ⚪️ White Belt Requirements (carried forward)
-
-| Requirement | Status |
-|---|---|
-| Freighter wallet connect / disconnect | ✅ |
-| Fetch & display XLM balance | ✅ |
-| Send XLM transaction on Testnet | ✅ |
-| Show success / failure state | ✅ |
-| Show transaction hash | ✅ (linked to Stellar Expert) |
+| Advanced Soroban contract (`TotalDistributed`, `get_latest_run`) | ✅ |
+| 8 unit tests (auth, accumulation, multiple senders, latest run) | ✅ |
+| CI/CD pipeline — GitHub Actions runs `cargo test` on every push | ✅ |
+| Mobile responsive UI (hamburger menu, adaptive grid) | ✅ |
+| Error handling — RPC errors caught, startLedger range fix | ✅ |
+| `getTotalDistributed()` + `getLatestRun()` in frontend | ✅ |
+| On-Chain Total Distributed stat card on dashboard | ✅ |
+| Multi-wallet support (Freighter + ALBEDO) | ✅ |
+| Production Vercel deployment | ✅ |
+| 10+ meaningful commits | ✅ |
 
 ---
 
-## 🚀 What's New in Yellow Belt
+## 🚀 Live Demo
 
-### 🔑 Multi-Wallet Support
-The app now supports **two wallet providers**:
-- **🦊 Freighter** — the Stellar browser extension (`freighter.app`)
-- **🔷 ALBEDO** — a web-based signer, no extension required (`albedo.link`)
+🌐 **[micropayroll-git-main-jakub-0bc9.vercel.app](https://micropayroll-git-main-jakub-0bc9.vercel.app)**
 
-A wallet selector modal appears at connect time. The active wallet type is shown
-in the top bar. All transaction signing is routed through the `WalletProvider`
-abstraction layer (`js/wallet-provider.js`), so adding more wallets later is trivial.
+---
 
-### 📜 PayrollRegistry Soroban Contract
-A Soroban smart contract (`contracts/payroll_registry/`) written in Rust that:
+## 🏗️ Architecture
 
-- **`log_run(sender, recipient_count, total_stroops)`** — Requires sender authorization,
-  stores the run record on-chain, increments the run counter, and emits a
-  `("payroll", "logged")` event that any listener can pick up.
-- **`get_run_count()`** — Returns the total number of payroll runs ever logged.
-- **`get_run(run_id)`** — Returns the full `RunRecord` for a given run ID.
+```
+MicroPayroll
+├── contracts/payroll_registry/   ← Soroban smart contract (Rust)
+│   └── src/
+│       ├── lib.rs                ← log_run, get_total_distributed, get_latest_run
+│       └── test.rs               ← 8 unit tests
+├── css/main.css                  ← Styles + mobile responsive (Orange Belt)
+├── js/
+│   ├── config.js                 ← CONTRACT_ID, network config
+│   ├── contract.js               ← Soroban RPC integration (Orange Belt)
+│   ├── wallet.js + wallet-provider.js  ← Freighter + ALBEDO
+│   ├── payroll.js                ← Payroll distribution logic
+│   ├── ui.js                     ← DOM rendering
+│   └── main.js                   ← App entry point + sidebar toggle
+├── .github/workflows/test.yml    ← CI/CD (Orange Belt)
+└── index.html                    ← Single-page app shell
+```
 
-Each run record stores: `sender`, `recipient_count`, `total_stroops`, `timestamp`.
+---
 
-### 📡 On-Chain Events Tab
-The History page has a new **On-Chain Events** tab that queries the Soroban RPC
-(`soroban-testnet.stellar.org`) for `payroll/logged` events emitted by the deployed
-contract. Every run is permanently verifiable on Stellar Testnet.
+## 📦 Contract: PayrollRegistry
+
+**Contract ID:** `CBYELVJVGXMRHMHX4WSUVI2IDP4FAD4ZR2VQFG5A25FZCNDHYTHFXAUT`
+_(Update after Orange Belt redeploy)_
+
+**Network:** Stellar Testnet
+
+| Function | Description |
+|---|---|
+| `log_run(sender, recipient_count, total_stroops)` | Records a payroll run, accumulates total distributed |
+| `get_run_count()` | Returns total number of runs |
+| `get_run(run_id)` | Returns a specific run's `RunRecord` |
+| `get_total_distributed()` | Returns cumulative stroops paid across all runs (Orange Belt) |
+| `get_latest_run()` | Returns the most recent `RunRecord` (Orange Belt) |
+
+---
+
+## 🧪 Tests (8 passing)
+
+```bash
+cd contracts/payroll_registry
+cargo test
+```
+
+| Test | What it verifies |
+|---|---|
+| `test_log_run_basic` | First run returns ID 1 |
+| `test_run_count_increments` | Count goes 0 → 1 → 2 |
+| `test_get_run_retrieves_data` | Stored fields match inputs |
+| `test_no_run_returns_none` | Non-existent run_id → None |
+| `test_sequential_run_ids` | IDs are sequential: 1, 2, 3 |
+| `test_auth_required` | `try_log_run` without mock auth → Err |
+| `test_total_distributed_accumulates` | 0 → 100M → 350M → 400M stroops |
+| `test_get_latest_run` | None when empty; correct fields after run |
+
+---
+
+## ⚙️ Build & Deploy Contract
+
+```powershell
+# 1. Build WASM
+cd contracts\payroll_registry
+cargo build --target wasm32-unknown-unknown --release
+
+# 2. Deploy to Testnet
+stellar contract deploy `
+  --wasm target\wasm32-unknown-unknown\release\payroll_registry.wasm `
+  --source-account YOUR_SECRET_KEY `
+  --network testnet
+
+# 3. Paste the new CONTRACT_ID into js/config.js
+```
+
+---
+
+## 🔄 CI/CD Pipeline
+
+Every push to `main` triggers GitHub Actions:
+1. Installs Rust stable + `wasm32-unknown-unknown` target
+2. Runs `cargo test --verbose` — all 8 tests must pass
+3. Builds the WASM release artifact
+4. Uploads WASM as a downloadable artifact
+
+[![CI Tests](https://github.com/os6863/micropayroll/actions/workflows/test.yml/badge.svg)](https://github.com/os6863/micropayroll/actions/workflows/test.yml)
+
+---
+
+## 📱 Mobile Responsive
+
+- Hamburger menu opens sidebar on mobile (≤ 900px)
+- Stats grid adapts: 4-col → 2-col → 1-col
+- Wallet address column hidden on small screens
+- Full touch-friendly modals and buttons
 
 ---
 
@@ -86,121 +134,36 @@ contract. Every run is permanently verifiable on Stellar Testnet.
 
 | Layer | Technology |
 |---|---|
-| Blockchain | Stellar Testnet (Horizon API + Soroban RPC) |
-| Smart Contract | Soroban (Rust) — `payroll_registry` |
-| Wallets | Freighter v1 + ALBEDO |
-| SDK | `@stellar/stellar-sdk` v12 |
-| Frontend | Vanilla HTML + CSS + JS (no build step) |
-| Explorer | Stellar Expert |
-| Deploy | Netlify |
+| Blockchain | Stellar Testnet |
+| Smart Contract | Soroban / Rust SDK v21 |
+| Frontend | Vanilla JS, HTML5, CSS3 |
+| Wallets | Freighter (extension) · ALBEDO (web) |
+| RPC | soroban-testnet.stellar.org |
+| CI/CD | GitHub Actions |
+| Hosting | Vercel |
 
 ---
 
-## 📁 Project Structure
+## 📸 Screenshots
 
-```
-micropayroll/
-├── index.html                    # App shell & markup
-├── css/
-│   └── main.css                  # Full stylesheet (incl. Yellow Belt additions)
-├── js/
-│   ├── config.js                 # Network config, Soroban RPC, contract ID
-│   ├── state.js                  # Centralized app state
-│   ├── ui.js                     # DOM rendering & UI helpers
-│   ├── wallet-provider.js        # ★ Multi-wallet abstraction (Freighter + ALBEDO)
-│   ├── wallet.js                 # Wallet orchestration
-│   ├── stellar.js                # Horizon payments (uses WalletProvider)
-│   ├── contract.js               # ★ Soroban contract interaction
-│   ├── payroll.js                # Payroll engine (calls contract after run)
-│   └── main.js                   # Init & event handlers
-├── contracts/
-│   └── payroll_registry/         # ★ Soroban smart contract (Rust)
-│       ├── Cargo.toml
-│       └── src/
-│           ├── lib.rs            # Contract implementation
-│           └── test.rs           # Unit tests
-├── netlify.toml
-└── README.md
-```
+### Dashboard (Desktop)
+![Dashboard](screenshots/dashboard-desktop.png)
 
-★ = new in Yellow Belt
+### Mobile View
+![Mobile](screenshots/mobile-responsive.png)
+
+### CI/CD Pipeline
+![CI](screenshots/cicd-pipeline.png)
+
+### On-Chain Events
+![Events](screenshots/onchain-events.png)
 
 ---
 
-## 🔧 Deploy the Smart Contract
+## Journey Progress
 
-### Prerequisites
-```bash
-rustup target add wasm32-unknown-unknown
-cargo install --locked stellar-cli --features opt
-```
-
-### Build
-```bash
-cd contracts/payroll_registry
-cargo build --target wasm32-unknown-unknown --release
-stellar contract optimize \
-  --wasm target/wasm32-unknown-unknown/release/payroll_registry.wasm
-```
-
-### Run Tests
-```bash
-cargo test
-```
-
-### Deploy to Testnet
-```bash
-stellar contract deploy \
-  --wasm target/wasm32-unknown-unknown/release/payroll_registry.optimized.wasm \
-  --source-account YOUR_SECRET_KEY \
-  --network testnet
-# → Copy the returned contract ID
-```
-
-### Configure the Frontend
-Open `js/config.js` and replace `'PLACEHOLDER'` with your deployed contract ID:
-```js
-CONTRACT_ID: 'CXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-```
-
----
-
-## 🏃 Running Locally
-
-1. Install [Freighter](https://www.freighter.app/) (optional — ALBEDO works without it)
-2. Switch Freighter to **Testnet** mode (if using Freighter)
-3. Clone and open:
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/micropayroll
-   cd micropayroll
-   open index.html   # or use Live Server in VS Code
-   ```
-4. Connect wallet (Freighter or ALBEDO) → click **Friendbot** → add team → Run Payroll 🚀
-
----
-
-## 🌐 Deploy to Netlify
-
-1. Push to GitHub
-2. Netlify → New site → Import from Git
-3. Build command: *(leave empty)*
-4. Publish directory: `.`
-5. Deploy ✅
-
----
-
-## 🔮 Roadmap (Orange Belt & Beyond)
-
-- [ ] Multi-sig payroll approval (contract governance)
-- [ ] USDC stablecoin support via Stellar Anchors
-- [ ] Recurring / scheduled payroll
-- [ ] CSV team import
-- [ ] Milestone-based escrow payments
-- [ ] Full test suite with Soroban test utilities
-- [ ] Contract upgrade path
-
----
-
-## 📜 License
-
-MIT — Built for the Stellar Journey to Mastery hackathon.
+| Level | Status |
+|---|---|
+| ⚪ White Belt — Stellar basics | ✅ |
+| 🟡 Yellow Belt — Multi-wallet dApp + Soroban contract | ✅ |
+| 🟠 Orange Belt — Advanced contract + CI/CD + Mobile | ✅ Submitted |
